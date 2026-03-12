@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-black: #000000;
+    --color-green: #00261B;
+    --color-lime: #C7EA45;
+    --color-white: #FFFFFF;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-brand-green text-brand-white font-sans antialiased;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-lime text-brand-black font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity;
+  }
+
+  .btn-secondary {
+    @apply bg-white/10 text-brand-white font-semibold px-4 py-2 rounded-lg hover:bg-white/20 transition-colors;
+  }
+
+  .card {
+    @apply bg-white/5 border border-white/10 rounded-xl p-6;
+  }
+
+  .input {
+    @apply w-full bg-white/10 border border-white/20 text-brand-white placeholder:text-white/40 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-lime transition-colors;
+  }
+
+  .label {
+    @apply text-sm font-medium text-white/70 mb-1 block;
+  }
+
+  .table-header {
+    @apply text-xs font-semibold text-white/50 uppercase tracking-wider;
+  }
+
+  .table-cell {
+    @apply py-3 px-4 text-sm text-white/80;
+  }
+}
+
+/* ─── react-day-picker dark theme (AnalisisPage) ────────────────────────────── */
+.rdp {
+  --rdp-accent-color: #C7EA45;
+  --rdp-background-color: rgba(199, 234, 69, 0.15);
+  --rdp-outline: 2px solid #C7EA45;
+  color: white;
+  margin: 0;
+}
+.rdp-months {
+  background: #0a1f16;
+  padding: 14px;
+}
+.rdp-month { padding: 0 6px; }
+.rdp-caption_label { color: white; font-weight: 600; font-size: 14px; }
+.rdp-head_cell { color: rgba(255,255,255,0.35); font-size: 11px; font-weight: 500; }
+.rdp-day { color: rgba(255,255,255,0.75); border-radius: 8px; }
+.rdp-day:hover:not(.rdp-day_disabled):not(.rdp-day_selected) {
+  background-color: rgba(255,255,255,0.08) !important;
+}
+.rdp-day_selected,
+.rdp-day_range_start,
+.rdp-day_range_end {
+  background-color: #C7EA45 !important;
+  color: #000 !important;
+  font-weight: 700;
+}
+.rdp-day_range_middle {
+  background-color: rgba(199,234,69,0.12) !important;
+  color: rgba(255,255,255,0.8) !important;
+  border-radius: 0;
+}
+.rdp-day_range_start { border-radius: 8px 0 0 8px !important; }
+.rdp-day_range_end   { border-radius: 0 8px 8px 0 !important; }
+.rdp-day_today:not(.rdp-day_selected) { color: #C7EA45; font-weight: 700; }
+.rdp-nav_button { color: rgba(255,255,255,0.4); border-radius: 8px; }
+.rdp-nav_button:hover { background-color: rgba(255,255,255,0.08) !important; color: white; }
+.rdp-day_disabled { color: rgba(255,255,255,0.15) !important; }

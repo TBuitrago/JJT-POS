@@ -1,0 +1,29 @@
+{
+  "name": "culto-orquideas-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "echo 'dist/ pre-compilado en el repo, no requiere compilacion en servidor'",
+    "build:ts": "tsc",
+    "start": "node dist/index.js",
+    "build:full": "npm --prefix ../frontend run build && npm run build:ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.10",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
+    "nodemailer": "^8.0.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.5",
+    "@types/nodemailer": "^6.4.17",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.2"
+  }
+}
