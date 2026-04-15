@@ -10,10 +10,21 @@ router.use(authMiddleware)
 // GET /api/discount-codes — listar todos los códigos
 // ============================================================
 router.get('/', async (_req: AuthRequest, res: Response): Promise<void> => {
-  const { data, error } = await supabaseAdmin
+  // Intentar con join de cliente asignado (funciona después de aplicar migración)
+  // Si falla (columna aún no existe), usar select plano
+  let result = await supabaseAdmin
     .from('discount_codes')
     .select('*, assigned_client:clients(id, name, email)')
     .order('created_at', { ascending: false })
+
+  if (result.error) {
+    result = await supabaseAdmin
+      .from('discount_codes')
+      .select('*')
+      .order('created_at', { ascending: false })
+  }
+
+  const { data, error } = result
 
   if (error) {
     res.status(500).json({ error: error.message })
