@@ -1,9 +1,32 @@
 import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, Loader2, CheckCircle, Check, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/authStore'
 import logo from '@/assets/logo_culto.webp'
+
+const PASSWORD_RULES = [
+  { key: 'length', label: 'Mínimo 8 caracteres', test: (p: string) => p.length >= 8 },
+  { key: 'lowercase', label: 'Al menos una minúscula', test: (p: string) => /[a-z]/.test(p) },
+  { key: 'uppercase', label: 'Al menos una mayúscula', test: (p: string) => /[A-Z]/.test(p) },
+  { key: 'digit', label: 'Al menos un número', test: (p: string) => /\d/.test(p) },
+  { key: 'special', label: 'Al menos un carácter especial (!@#$%...)', test: (p: string) => /[^a-zA-Z0-9]/.test(p) },
+] as const
+
+function parseSupabasePasswordError(error: { message?: string; code?: string }): string {
+  const msg = error.message?.toLowerCase() ?? ''
+
+  if (msg.includes('weak') || msg.includes('strength'))
+    return 'La contraseña no cumple los requisitos de seguridad. Revisa los indicadores abajo.'
+
+  if (msg.includes('same_password') || msg.includes('different'))
+    return 'La nueva contraseña debe ser diferente a la anterior.'
+
+  if (msg.includes('too short') || msg.includes('length'))
+    return 'La contraseña es muy corta.'
+
+  return 'No se pudo actualizar la contraseña. Intenta de nuevo.'
+}
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate()
@@ -30,12 +53,14 @@ export default function ResetPasswordPage() {
     }
   }, [session, waitingForToken])
 
+  const allRulesPass = PASSWORD_RULES.every((r) => r.test(password))
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
 
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+    if (!allRulesPass) {
+      setError('La contraseña no cumple todos los requisitos.')
       return
     }
 
@@ -51,7 +76,7 @@ export default function ResetPasswordPage() {
     setLoading(false)
 
     if (error) {
-      setError('No se pudo actualizar la contraseña. Intenta de nuevo.')
+      setError(parseSupabasePasswordError(error))
       return
     }
 
@@ -164,6 +189,35 @@ export default function ResetPasswordPage() {
             />
           </div>
 
+          {/* Indicadores de requisitos */}
+          {password.length > 0 && (
+            <ul className="space-y-1">
+              {PASSWORD_RULES.map((rule) => {
+                const passes = rule.test(password)
+                return (
+                  <li key={rule.key} className="flex items-center gap-2 text-xs">
+                    {passes
+                      ? <Check size={12} className="text-green-400 shrink-0" />
+                      : <X size={12} className="text-white/30 shrink-0" />}
+                    <span className={passes ? 'text-green-400' : 'text-white/40'}>
+                      {rule.label}
+                    </span>
+                  </li>
+                )
+              })}
+              {confirmPassword.length > 0 && (
+                <li className="flex items-center gap-2 text-xs">
+                  {password === confirmPassword
+                    ? <Check size={12} className="text-green-400 shrink-0" />
+                    : <X size={12} className="text-white/30 shrink-0" />}
+                  <span className={password === confirmPassword ? 'text-green-400' : 'text-white/40'}>
+                    Las contraseñas coinciden
+                  </span>
+                </li>
+              )}
+            </ul>
+          )}
+
           {error && (
             <p className="text-red-400 text-sm text-center bg-red-400/10 rounded-lg py-2 px-3">
               {error}
@@ -172,7 +226,7 @@ export default function ResetPasswordPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !allRulesPass}
             className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
