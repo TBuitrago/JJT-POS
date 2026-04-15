@@ -3,9 +3,47 @@ import { authMiddleware, AuthRequest } from '../middleware/auth'
 import { requireAdmin } from '../middleware/authorize'
 import { supabaseAdmin } from '../services/supabase'
 import { sendOrderConfirmation } from '../services/email'
+import { checkAndEmitReward } from '../services/rewards'
 
 const router = Router()
 router.use(authMiddleware)
+
+// ─── Helper: consumir código de uso limitado + verificar recompensa ──────────
+async function handlePostCompletion(orderId: string, discountCodeId: string | null, clientId: string | null): Promise<void> {
+  // 1. Si la orden usó un código con límite de usos → consumirlo atómicamente
+  if (discountCodeId) {
+    const { data: dc } = await supabaseAdmin
+      .from('discount_codes')
+      .select('max_uses, uses_count')
+      .eq('id', discountCodeId)
+      .single()
+
+    if (dc && dc.max_uses !== null) {
+      // UPDATE atómico: los filtros eq + lt garantizan que solo un request concurrente tenga efecto
+      const { data: consumed } = await supabaseAdmin
+        .from('discount_codes')
+        .update({
+          uses_count: dc.uses_count + 1,
+          is_active: (dc.uses_count + 1 >= dc.max_uses) ? false : true,
+          redeemed_in_order_id: orderId,
+        })
+        .eq('id', discountCodeId)
+        .eq('is_active', true)
+        .lt('uses_count', dc.max_uses)
+        .select('id')
+
+      if (!consumed || consumed.length === 0) {
+        console.warn(`[Orders] Código ${discountCodeId} ya fue consumido (concurrencia)`)
+      }
+    }
+  }
+
+  // 2. Si la orden tiene cliente registrado → verificar recompensa
+  if (clientId) {
+    checkAndEmitReward(clientId, orderId)
+      .catch(err => console.error('[Orders] Error al verificar recompensa:', err.message))
+  }
+}
 
 // ============================================================
 // GET /api/orders — listar órdenes (paginado)
@@ -310,6 +348,11 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     }).catch(err => console.error('[Email] Error al enviar confirmación de orden:', err.message))
   }
 
+  // Consumir código de uso limitado + verificar recompensa (no bloqueante)
+  if (status === 'completed') {
+    handlePostCompletion(order.id, discount_code_id || null, client_id || null)
+  }
+
   res.status(201).json({ data: fullOrder })
 })
 
@@ -583,6 +626,13 @@ router.patch('/:id/complete', async (req: AuthRequest, res: Response): Promise<v
       notes: fullOrder.notes,
     }).catch(err => console.error('[Email] Error al enviar confirmación de orden:', err.message))
   }
+
+  // Consumir código de uso limitado + verificar recompensa (no bloqueante)
+  handlePostCompletion(
+    id as string,
+    (order.discount_code_id as string) || null,
+    (order.client_id as string) || null,
+  )
 
   res.json({ data: fullOrder })
 })

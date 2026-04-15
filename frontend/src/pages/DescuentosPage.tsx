@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, FormEvent } from 'react'
 import {
   Plus, Pencil, Trash2, ChevronUp, ChevronDown,
-  ChevronsUpDown, Loader2, Tag, ToggleLeft, ToggleRight,
+  ChevronsUpDown, Loader2, Tag, ToggleLeft, ToggleRight, Gift,
 } from 'lucide-react'
 import api from '@/lib/api'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatDateShort } from '@/lib/utils'
 import { useIsAdmin } from '@/hooks/useRole'
 import Modal from '@/components/ui/Modal'
 import type { DiscountCode } from '@/types'
@@ -59,6 +59,8 @@ export default function DescuentosPage() {
   })
 
   const active = codes.filter(c => c.is_active).length
+  const rewardCodes = codes.filter(c => c.reward_tier != null)
+  const manualCodes = codes.filter(c => c.reward_tier == null)
 
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -159,10 +161,14 @@ export default function DescuentosPage() {
 
       {/* Stats rápidas */}
       {!loading && codes.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="card p-4">
-            <p className="text-xs text-white/40 mb-1">Total códigos</p>
-            <p className="text-2xl font-bold text-brand-white">{codes.length}</p>
+            <p className="text-xs text-white/40 mb-1">Manuales</p>
+            <p className="text-2xl font-bold text-brand-white">{manualCodes.length}</p>
+          </div>
+          <div className="card p-4">
+            <p className="text-xs text-white/40 mb-1">Recompensas</p>
+            <p className="text-2xl font-bold text-amber-400">{rewardCodes.length}</p>
           </div>
           <div className="card p-4">
             <p className="text-xs text-white/40 mb-1">Activos</p>
@@ -185,6 +191,7 @@ export default function DescuentosPage() {
                   onClick={() => handleSort('code')}>
                   Código<SortIcon col="code" />
                 </th>
+                <th className="table-header px-4 py-3 text-center hidden sm:table-cell">Tipo</th>
                 <th className="table-header px-4 py-3 text-right cursor-pointer select-none hover:text-white/80 transition-colors"
                   onClick={() => handleSort('percentage')}>
                   Descuento<SortIcon col="percentage" />
@@ -192,7 +199,7 @@ export default function DescuentosPage() {
                 <th className="table-header px-4 py-3 text-center">Estado</th>
                 <th className="table-header px-4 py-3 text-left cursor-pointer select-none hover:text-white/80 transition-colors hidden sm:table-cell"
                   onClick={() => handleSort('created_at')}>
-                  Creado<SortIcon col="created_at" />
+                  Info<SortIcon col="created_at" />
                 </th>
                 <th className="table-header px-4 py-3 text-right w-28">Acciones</th>
               </tr>
@@ -201,7 +208,7 @@ export default function DescuentosPage() {
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="border-b border-white/5">
-                    {[...Array(5)].map((_, j) => (
+                    {[...Array(6)].map((_, j) => (
                       <td key={j} className="px-4 py-3">
                         <div className="h-4 bg-white/10 rounded animate-pulse" />
                       </td>
@@ -210,18 +217,36 @@ export default function DescuentosPage() {
                 ))
               ) : sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-white/40 text-sm">
+                  <td colSpan={6} className="px-4 py-12 text-center text-white/40 text-sm">
                     No hay códigos de descuento registrados
                   </td>
                 </tr>
               ) : (
-                sorted.map(dc => (
+                sorted.map(dc => {
+                  const isReward = dc.reward_tier != null
+                  const isExpired = dc.expires_at ? new Date(dc.expires_at) <= new Date() : false
+                  const isUsed = dc.max_uses !== null && dc.uses_count >= dc.max_uses
+
+                  return (
                   <tr key={dc.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
                     <td className="table-cell">
                       <div className="flex items-center gap-2">
-                        <Tag size={14} className="text-brand-lime shrink-0" />
+                        {isReward
+                          ? <Gift size={14} className="text-amber-400 shrink-0" />
+                          : <Tag size={14} className="text-brand-lime shrink-0" />}
                         <span className="font-mono font-bold text-brand-white tracking-wide">{dc.code}</span>
                       </div>
+                    </td>
+                    <td className="table-cell text-center hidden sm:table-cell">
+                      {isReward ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-semibold">
+                          <Gift size={10} /> Recompensa
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] font-semibold">
+                          Manual
+                        </span>
+                      )}
                     </td>
                     <td className="table-cell text-right">
                       <span className="inline-flex items-center justify-center w-14 h-7 rounded-full bg-brand-lime/15 text-brand-lime text-sm font-bold">
@@ -247,19 +272,40 @@ export default function DescuentosPage() {
                           ) : (
                             <>
                               <ToggleLeft size={16} className="text-white/30" />
-                              <span className="text-white/30">Inactivo</span>
+                              <span className="text-white/30">{isUsed ? 'Usado' : isExpired ? 'Vencido' : 'Inactivo'}</span>
                             </>
                           )}
                         </button>
                       ) : (
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${dc.is_active ? 'text-brand-lime' : 'text-white/30'}`}>
-                          {dc.is_active ? <><ToggleRight size={16} /> Activo</> : <><ToggleLeft size={16} /> Inactivo</>}
+                          {dc.is_active ? (
+                            <><ToggleRight size={16} /> Activo</>
+                          ) : (
+                            <><ToggleLeft size={16} /> {isUsed ? 'Usado' : isExpired ? 'Vencido' : 'Inactivo'}</>
+                          )}
                         </span>
                       )}
                     </td>
-                    <td className="table-cell text-white/50 text-sm hidden sm:table-cell">{formatDate(dc.created_at)}</td>
+                    <td className="table-cell text-white/50 text-sm hidden sm:table-cell">
+                      {isReward ? (
+                        <div className="space-y-0.5">
+                          {dc.assigned_client && (
+                            <p className="text-[11px] text-white/40 truncate max-w-[160px]" title={dc.assigned_client.name}>
+                              {dc.assigned_client.name}
+                            </p>
+                          )}
+                          {dc.expires_at && (
+                            <p className={`text-[11px] ${isExpired ? 'text-red-400' : 'text-white/30'}`}>
+                              {isExpired ? 'Venció' : 'Vence'}: {formatDateShort(dc.expires_at)}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm">{formatDate(dc.created_at)}</span>
+                      )}
+                    </td>
                     <td className="table-cell text-right">
-                      {isAdmin && (
+                      {isAdmin && !isReward && (
                         <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                           <button title="Editar porcentaje" onClick={() => openEdit(dc)}
                             className="p-1.5 rounded-lg text-white/50 hover:text-brand-white hover:bg-white/10 transition-colors">
@@ -271,9 +317,18 @@ export default function DescuentosPage() {
                           </button>
                         </div>
                       )}
+                      {isAdmin && isReward && (
+                        <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                          <button title="Eliminar" onClick={() => setDeleteTarget(dc)}
+                            className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
-                ))
+                  )
+                })
               )}
             </tbody>
           </table>

@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Search, ShoppingCart, Trash2, Plus, Minus, User, Tag,
   Truck, FileText, CreditCard, Banknote, Loader2, CheckCircle2,
-  AlertTriangle, X, UserPlus, Pencil,
+  AlertTriangle, X, UserPlus, Pencil, Gift,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { formatCOP, calcOrderTotal, isValidSKU, cn } from '@/lib/utils'
@@ -259,9 +259,11 @@ export default function POSPage() {
     setValidatingDiscount(true)
     setDiscountError(null)
     try {
-      const { data } = await api.get<{ data: DiscountCode }>('/api/discount-codes/validate', {
-        params: { code: discountInput.trim().toUpperCase() },
-      })
+      const params: Record<string, string> = { code: discountInput.trim().toUpperCase() }
+      if (clientMode === 'registered' && selectedClient) {
+        params.client_id = selectedClient.id
+      }
+      const { data } = await api.get<{ data: DiscountCode }>('/api/discount-codes/validate', { params })
       setDiscount(data.data)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
@@ -850,8 +852,20 @@ export default function POSPage() {
           {discount ? (
             <div className="flex items-center justify-between px-3 py-2 bg-brand-lime/10 border border-brand-lime/20 rounded-lg">
               <div>
-                <p className="text-xs font-bold text-brand-lime">{discount.code}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-brand-lime">{discount.code}</p>
+                  {discount.reward_tier != null && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-semibold">
+                      <Gift size={9} /> Recompensa
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-white/50">{discount.percentage}% sobre subtotal de productos</p>
+                {discount.expires_at && (
+                  <p className="text-[10px] text-white/30 mt-0.5">
+                    Vence: {new Date(discount.expires_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
               </div>
               <button onClick={removeDiscount} className="text-white/40 hover:text-red-400 transition-colors">
                 <X size={13} />

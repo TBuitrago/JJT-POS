@@ -19,5 +19,13 @@ export interface OrderEmailData {
     paymentMethod: 'cash' | 'transfer';
     notes?: string | null;
 }
+export interface RewardEmailData {
+    clientName: string;
+    clientEmail: string;
+    code: string;
+    percentage: number;
+    expiresAt: string;
+}
+export declare function sendRewardEmail(data: RewardEmailData): Promise<void>;
 export declare function sendOrderConfirmation(data: OrderEmailData): Promise<void>;
 //# sourceMappingURL=email.d.ts.map

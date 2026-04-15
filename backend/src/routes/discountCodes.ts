@@ -12,7 +12,7 @@ router.use(authMiddleware)
 router.get('/', async (_req: AuthRequest, res: Response): Promise<void> => {
   const { data, error } = await supabaseAdmin
     .from('discount_codes')
-    .select('*')
+    .select('*, assigned_client:clients(id, name, email)')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -23,10 +23,11 @@ router.get('/', async (_req: AuthRequest, res: Response): Promise<void> => {
 })
 
 // ============================================================
-// GET /api/discount-codes/validate?code=X — validar código
+// GET /api/discount-codes/validate?code=X&client_id=Y — validar código
 // ============================================================
 router.get('/validate', async (req: AuthRequest, res: Response): Promise<void> => {
   const code = (req.query.code as string | undefined)?.trim().toUpperCase()
+  const clientId = (req.query.client_id as string | undefined)?.trim()
 
   if (!code) {
     res.status(400).json({ error: 'El parámetro "code" es requerido' })
@@ -48,6 +49,30 @@ router.get('/validate', async (req: AuthRequest, res: Response): Promise<void> =
   if (!data) {
     res.status(404).json({ error: 'Código inválido o inactivo' })
     return
+  }
+
+  // Verificar expiración
+  if (data.expires_at && new Date(data.expires_at) <= new Date()) {
+    res.status(400).json({ error: 'Este código ha expirado' })
+    return
+  }
+
+  // Verificar usos disponibles
+  if (data.max_uses !== null && data.uses_count >= data.max_uses) {
+    res.status(400).json({ error: 'Este código ya fue utilizado' })
+    return
+  }
+
+  // Verificar asignación a cliente
+  if (data.assigned_client_id) {
+    if (!clientId) {
+      res.status(400).json({ error: 'Este código es personal. Selecciona el cliente asignado primero.' })
+      return
+    }
+    if (data.assigned_client_id !== clientId) {
+      res.status(400).json({ error: 'Este código pertenece a otro cliente' })
+      return
+    }
   }
 
   res.json({ data })

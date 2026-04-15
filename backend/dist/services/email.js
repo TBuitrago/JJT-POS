@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendRewardEmail = sendRewardEmail;
 exports.sendOrderConfirmation = sendOrderConfirmation;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 // ─── Transporter (Hostinger SMTP, puerto 465 SSL) ────────────────────────────
@@ -180,7 +181,146 @@ function buildOrderHtml(data) {
 </html>
   `.trim();
 }
-// ─── Función principal exportada ──────────────────────────────────────────────
+// ─── Template HTML — Recompensa ──────────────────────────────────────────────
+function buildRewardHtml(data) {
+    const expiresDate = new Date(data.expiresAt);
+    const formattedExpiry = expiresDate.toLocaleDateString('es-CO', {
+        day: 'numeric', month: 'long', year: 'numeric',
+    });
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tu recompensa de cliente frecuente</title>
+</head>
+<body style="margin:0;padding:0;background:#011208;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#011208;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#00261B;border-radius:16px 16px 0 0;padding:32px 32px 24px;text-align:center;border-bottom:2px solid #C7EA45;">
+              <p style="margin:0 0 4px;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">🌿 Culto Orquídeas</p>
+              <p style="margin:0;font-size:13px;color:#9ca3af;">Programa de Cliente Frecuente</p>
+            </td>
+          </tr>
+
+          <!-- Saludo -->
+          <tr>
+            <td style="background:#00261B;padding:28px 32px 12px;">
+              <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#C7EA45;">
+                🎉 ¡Felicitaciones, ${data.clientName}!
+              </p>
+              <p style="margin:0;font-size:15px;color:#d1d5db;line-height:1.5;">
+                Has alcanzado <strong style="color:#ffffff;">$500.000 COP</strong> en compras acumuladas.
+                Como agradecimiento, te obsequiamos un código de descuento exclusivo:
+              </p>
+            </td>
+          </tr>
+
+          <!-- Código de descuento -->
+          <tr>
+            <td style="background:#00261B;padding:16px 32px 24px;">
+              <div style="background:#0a1f16;border:2px solid #C7EA45;border-radius:12px;padding:24px;text-align:center;">
+                <p style="margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;">Tu código de descuento</p>
+                <p style="margin:0 0 8px;font-size:36px;font-weight:700;font-family:monospace;color:#C7EA45;letter-spacing:3px;">${data.code}</p>
+                <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">${data.percentage}% de descuento</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Condiciones -->
+          <tr>
+            <td style="background:#00261B;padding:0 32px 24px;">
+              <div style="background:#0a1f16;border:1px solid #1a3d2e;border-radius:10px;padding:16px 20px;">
+                <p style="margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;font-weight:600;">Condiciones de uso</p>
+                <table cellpadding="0" cellspacing="0" style="width:100%;">
+                  <tr>
+                    <td style="padding:4px 0;font-size:13px;color:#d1d5db;">✅ Válido hasta</td>
+                    <td style="padding:4px 0;font-size:13px;color:#ffffff;font-weight:600;text-align:right;">${formattedExpiry}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;font-size:13px;color:#d1d5db;">✅ Usos permitidos</td>
+                    <td style="padding:4px 0;font-size:13px;color:#ffffff;font-weight:600;text-align:right;">1 sola vez</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;font-size:13px;color:#d1d5db;">✅ Personal</td>
+                    <td style="padding:4px 0;font-size:13px;color:#ffffff;font-weight:600;text-align:right;">No transferible</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;font-size:13px;color:#d1d5db;">✅ Acumulable</td>
+                    <td style="padding:4px 0;font-size:13px;color:#ffffff;font-weight:600;text-align:right;">No</td>
+                  </tr>
+                </table>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Instrucciones -->
+          <tr>
+            <td style="background:#00261B;padding:0 32px 24px;">
+              <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.5;text-align:center;">
+                Presenta este código en tu próxima compra en tienda y el descuento se aplicará sobre el subtotal de productos.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#071a0f;border-radius:0 0 16px 16px;padding:24px 32px;text-align:center;border-top:1px solid #1a3d2e;">
+              <p style="margin:0 0 6px;font-size:13px;color:#6b7280;">Este correo fue generado automáticamente por el sistema POS de Culto Orquídeas.</p>
+              <p style="margin:0;font-size:12px;color:#4b5563;">© ${new Date().getFullYear()} Culto Orquídeas · Medellín, Colombia</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+  `.trim();
+}
+// ─── Enviar email de recompensa ──────────────────────────────────────────────
+async function sendRewardEmail(data) {
+    const html = buildRewardHtml(data);
+    const expiresDate = new Date(data.expiresAt);
+    const formattedExpiry = expiresDate.toLocaleDateString('es-CO', {
+        day: 'numeric', month: 'long', year: 'numeric',
+    });
+    await transporter.sendMail({
+        from: process.env.EMAIL_FROM,
+        to: data.clientEmail,
+        subject: `🎉 ¡Ganaste un ${data.percentage}% de descuento! — Culto Orquídeas`,
+        html,
+        text: [
+            `¡Felicitaciones ${data.clientName}!`,
+            ``,
+            `Has alcanzado $500.000 COP en compras acumuladas en Culto Orquídeas.`,
+            `Como agradecimiento, te obsequiamos un código de descuento exclusivo:`,
+            ``,
+            `Código: ${data.code}`,
+            `Descuento: ${data.percentage}%`,
+            ``,
+            `Condiciones:`,
+            `  - Válido hasta: ${formattedExpiry}`,
+            `  - Un solo uso`,
+            `  - Personal e intransferible`,
+            `  - No acumulable con otros descuentos`,
+            ``,
+            `Presenta este código en tu próxima compra en tienda.`,
+            ``,
+            `© ${new Date().getFullYear()} Culto Orquídeas · Medellín, Colombia`,
+        ].join('\n'),
+    });
+}
+// ─── Enviar email de confirmación de orden ──────────────────────────────────
 async function sendOrderConfirmation(data) {
     const html = buildOrderHtml(data);
     await transporter.sendMail({

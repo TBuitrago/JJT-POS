@@ -5,8 +5,42 @@ const auth_1 = require("../middleware/auth");
 const authorize_1 = require("../middleware/authorize");
 const supabase_1 = require("../services/supabase");
 const email_1 = require("../services/email");
+const rewards_1 = require("../services/rewards");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
+// ─── Helper: consumir código de uso limitado + verificar recompensa ──────────
+async function handlePostCompletion(orderId, discountCodeId, clientId) {
+    // 1. Si la orden usó un código con límite de usos → consumirlo atómicamente
+    if (discountCodeId) {
+        const { data: dc } = await supabase_1.supabaseAdmin
+            .from('discount_codes')
+            .select('max_uses, uses_count')
+            .eq('id', discountCodeId)
+            .single();
+        if (dc && dc.max_uses !== null) {
+            // UPDATE atómico: los filtros eq + lt garantizan que solo un request concurrente tenga efecto
+            const { data: consumed } = await supabase_1.supabaseAdmin
+                .from('discount_codes')
+                .update({
+                uses_count: dc.uses_count + 1,
+                is_active: (dc.uses_count + 1 >= dc.max_uses) ? false : true,
+                redeemed_in_order_id: orderId,
+            })
+                .eq('id', discountCodeId)
+                .eq('is_active', true)
+                .lt('uses_count', dc.max_uses)
+                .select('id');
+            if (!consumed || consumed.length === 0) {
+                console.warn(`[Orders] Código ${discountCodeId} ya fue consumido (concurrencia)`);
+            }
+        }
+    }
+    // 2. Si la orden tiene cliente registrado → verificar recompensa
+    if (clientId) {
+        (0, rewards_1.checkAndEmitReward)(clientId, orderId)
+            .catch(err => console.error('[Orders] Error al verificar recompensa:', err.message));
+    }
+}
 // ============================================================
 // GET /api/orders — listar órdenes (paginado)
 // ============================================================
@@ -247,6 +281,10 @@ router.post('/', async (req, res) => {
             notes: fullOrder.notes,
         }).catch(err => console.error('[Email] Error al enviar confirmación de orden:', err.message));
     }
+    // Consumir código de uso limitado + verificar recompensa (no bloqueante)
+    if (status === 'completed') {
+        handlePostCompletion(order.id, discount_code_id || null, client_id || null);
+    }
     res.status(201).json({ data: fullOrder });
 });
 // ============================================================
@@ -454,6 +492,8 @@ router.patch('/:id/complete', async (req, res) => {
             notes: fullOrder.notes,
         }).catch(err => console.error('[Email] Error al enviar confirmación de orden:', err.message));
     }
+    // Consumir código de uso limitado + verificar recompensa (no bloqueante)
+    handlePostCompletion(id, order.discount_code_id || null, order.client_id || null);
     res.json({ data: fullOrder });
 });
 // ============================================================

@@ -29,7 +29,15 @@ export interface DiscountCode {
   code: string         // Alfanumérico único (ej. 'ORQUIDEA20')
   percentage: number   // ej. 15.00 = 15%
   is_active: boolean
+  max_uses: number | null         // NULL = ilimitado (códigos normales), 1 = recompensa
+  uses_count: number              // Veces que ha sido utilizado
+  assigned_client_id: string | null  // Cliente asignado (null = cualquiera)
+  expires_at: string | null       // Fecha de expiración ISO 8601
+  reward_tier: number | null      // Umbral de gasto que generó la recompensa
+  redeemed_in_order_id: string | null  // Orden donde fue canjeado
   created_at: string
+  // Relaciones opcionales
+  assigned_client?: Client
 }
 
 export type OrderStatus = 'draft' | 'completed'
