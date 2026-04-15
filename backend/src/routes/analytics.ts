@@ -234,7 +234,7 @@ router.get('/discounts', async (req: AuthRequest, res: Response): Promise<void> 
 
   let query = supabaseAdmin
     .from('orders')
-    .select('subtotal_gross, subtotal_net, discount_percentage, discount_code_id, discount_code:discount_codes(id, code)')
+    .select('subtotal_gross, subtotal_net, discount_percentage, discount_code_id, discount_code:discount_codes!discount_code_id(id, code)')
     .eq('status', 'completed')
     .is('deleted_at', null)
     .gt('discount_percentage', 0)

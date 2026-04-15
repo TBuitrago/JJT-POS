@@ -63,7 +63,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `, { count: 'exact' })
     .order('created_at', { ascending: false })
@@ -123,7 +123,7 @@ router.get('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `)
     .eq('id', id)
@@ -325,7 +325,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `)
     .eq('id', order.id)
@@ -495,7 +495,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `)
     .eq('id', id)
@@ -604,7 +604,7 @@ router.patch('/:id/complete', async (req: AuthRequest, res: Response): Promise<v
     .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `)
     .eq('id', id)

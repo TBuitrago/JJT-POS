@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
         .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `, { count: 'exact' })
         .order('created_at', { ascending: false })
@@ -111,7 +111,7 @@ router.get('/:id', async (req, res) => {
         .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `)
         .eq('id', id)
@@ -260,7 +260,7 @@ router.post('/', async (req, res) => {
         .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `)
         .eq('id', order.id)
@@ -380,7 +380,7 @@ router.put('/:id', async (req, res) => {
         .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `)
         .eq('id', id)
@@ -471,7 +471,7 @@ router.patch('/:id/complete', async (req, res) => {
         .select(`
       *,
       client:clients(id, name, email, phone),
-      discount_code:discount_codes(id, code, percentage),
+      discount_code:discount_codes!discount_code_id(id, code, percentage),
       items:order_items(*)
     `)
         .eq('id', id)
