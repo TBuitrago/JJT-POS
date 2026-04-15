@@ -42,8 +42,8 @@ culto-orquideas-pos/
 ├── backend/                   # Node.js + Express + TypeScript
 │   ├── src/
 │   │   ├── routes/            # Endpoints REST
-│   │   ├── middleware/        # Auth JWT (authMiddleware)
-│   │   ├── services/          # supabase.ts, email.ts
+│   │   ├── middleware/        # Auth JWT (authMiddleware), authorize (requireAdmin)
+│   │   ├── services/          # supabase.ts, email.ts, rewards.ts
 │   │   └── types/
 │   ├── dist/                  # JS compilado (commiteado para Hostinger)
 │   ├── public/                # Frontend build (commiteado para Hostinger)
@@ -67,7 +67,7 @@ culto-orquideas-pos/
 | POS | `/pos` | Venta paso a paso: carrito → cliente → descuento → pago. Soporta modo edición de borradores (`?draft=UUID`) |
 | Órdenes | `/ordenes` | Tabla paginada, filtros por estado, barra de búsqueda (cliente/email/nº orden, debounced). Detalle en modal, completar/eliminar. Botón ✏️ Editar en borradores. Botón ⬇ PDF en órdenes completadas |
 | Clientes | `/clientes` | CRUD de clientes registrados |
-| Descuentos | `/descuentos` | CRUD de códigos de descuento, toggle activo/inactivo |
+| Descuentos | `/descuentos` | CRUD de códigos de descuento, toggle activo/inactivo. Muestra códigos manuales y de recompensa con badges diferenciados |
 | Historial | `/historial` | Logs de inventario paginados con filtros por acción |
 | Análisis | `/analisis` | KPIs, gráficas de ventas, top productos, métodos de pago, descuentos. Selector de rango de fechas (presets 7/30/60/90d + calendario personalizado con botón "Aplicar"). Comparativo "Año anterior" / "Período anterior": delta % en KPIs, dos líneas en gráfica, columnas Comp./Δ% en tabla de descuentos |
 
@@ -95,8 +95,8 @@ PUT    /api/clients/:id
 DELETE /api/clients/:id
 
 # Descuentos
-GET    /api/discount-codes
-GET    /api/discount-codes/validate?code=XXX
+GET    /api/discount-codes                           # Lista manuales + recompensas
+GET    /api/discount-codes/validate?code=XXX&client_id=UUID  # Valida código (expiry, usos, propiedad)
 POST   /api/discount-codes
 PUT    /api/discount-codes/:id
 DELETE /api/discount-codes/:id
@@ -142,6 +142,8 @@ GET    /api/analytics/discounts?from=&to=          # total descuentos + desglose
 - **Teléfono cliente**: nullable — columna `clients.phone` permite `NULL` (migración `20260311000000`)
 - **Ajuste de precio por ítem**: el admin puede cambiar el precio de venta al crear/editar una orden sin modificar el inventario. Se guarda en `original_price` y `price_note` en `order_items`. Visible en el modal de detalle, en el email y en el PDF
 - **PDF de órdenes**: las órdenes completadas (visitantes y clientes registrados) se pueden descargar como `CO-XXXX.pdf` directamente desde el modal de detalle en OrdenesPage. Generación 100% client-side
+- **Programa de recompensas**: al acumular $500.000 COP en órdenes completadas, el sistema genera automáticamente un código `ORQ-XXXXXX` (20%, un solo uso, 30 días de vigencia, personal e intransferible). Se envía email al cliente. Validación en POS verifica expiración, uso y propiedad del cliente. Idempotencia garantizada con índice único parcial. Consumo atómico con filtros WHERE para concurrencia segura
+- **Códigos de recompensa no revocables**: eliminar una orden completada revierte el stock pero **no** desactiva códigos de recompensa ya emitidos
 
 ---
 
@@ -253,12 +255,24 @@ curl http://localhost:3001/api/health
 
 ## Notificaciones por email
 
+### Confirmación de orden
+
 Al **completar** una orden, el sistema envía automáticamente un correo de confirmación al cliente **si este tiene email registrado**.
 
-- **Proveedor**: Hostinger SMTP (puerto 465, SSL obligatorio)
 - **Contenido**: número de orden, listado de productos, subtotal, descuento aplicado, costo de envío, total y método de pago
 - **Diseño**: HTML con branding de Culto Orquídeas (verde oscuro + lima)
-- **Fallo silencioso**: si el SMTP falla, la orden se completa igualmente (el envío de email es no-bloqueante)
+
+### Recompensa de cliente frecuente
+
+Al alcanzar **$500.000 COP** en compras acumuladas, se envía email con el código de descuento personal.
+
+- **Contenido**: felicitación, código en formato grande monoespaciado, porcentaje de descuento, tabla de condiciones (vigencia, usos, personal, no acumulable), instrucciones
+- **Diseño**: mismo branding que el email de confirmación
+
+### Notas generales
+
+- **Proveedor**: Hostinger SMTP (puerto 465, SSL obligatorio)
+- **Fallo silencioso**: si el SMTP falla, la orden/recompensa se procesa igualmente (envío de email es no-bloqueante)
 
 ---
 
@@ -269,7 +283,7 @@ Al **completar** una orden, el sistema envía automáticamente un correo de conf
 | `user_profiles` | Perfiles de usuario con rol (admin/vendedor) |
 | `products` | Catálogo de plantas con SKU, precio y stock |
 | `clients` | Clientes registrados |
-| `discount_codes` | Códigos de descuento con porcentaje |
+| `discount_codes` | Códigos de descuento (manuales y recompensas). Columnas reward: `max_uses`, `uses_count`, `assigned_client_id`, `expires_at`, `reward_tier`, `redeemed_in_order_id` |
 | `orders` | Cabecera de órdenes (borrador o completada). `deleted_at` para soft-delete |
 | `order_items` | Líneas de producto por orden |
 | `inventory_logs` | Historial de movimientos de inventario |
@@ -302,6 +316,7 @@ Al **completar** una orden, el sistema envía automáticamente un correo de conf
 | Post-deploy | ✅ | Búsqueda en OrdenesPage por nombre de cliente, email o número de orden (debounced 400ms) |
 | Post-deploy | ✅ | Seguridad: Helmet (headers HTTP), rate limiting 200 req/15 min, validación longitud de búsqueda |
 | Post-deploy | ✅ | Rol vendedor: RBAC con dos roles (admin/vendedor), middleware requireAdmin, ownership checks, UI condicional |
+| Post-deploy | ✅ | Programa de recompensas: código ORQ-XXXXXX automático al alcanzar $500k COP, email branded, validación en POS, consumo atómico |
 
 ---
 
@@ -351,6 +366,8 @@ INSERT INTO user_profiles (id, role) VALUES ('<user-uuid>', 'admin');
 | Rate limiting | **express-rate-limit** — 200 req / 15 min por IP en todas las rutas `/api/*`. HTTP 429 al superarlo |
 | Validación inputs | `?search=` truncado a 100 caracteres; límites en paginación (`limit` máx. 200) |
 | Inyección SQL | No aplica — Supabase JS client usa queries parametrizadas; no se construyen queries con string concatenation |
+| Idempotencia recompensas | Índice único parcial `(assigned_client_id, reward_tier) WHERE reward_tier IS NOT NULL` previene emisión duplicada |
+| Consumo atómico códigos | UPDATE con filtros `eq(is_active, true).lt(uses_count, max_uses)` — solo un request concurrente tiene efecto |
 | Secrets | Variables de entorno en Hostinger; `service_role_key` nunca expuesta al frontend |
 
 ---
