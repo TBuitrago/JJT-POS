@@ -6,9 +6,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+export type UserRole = 'admin' | 'vendedor'
+
 export interface AuthRequest extends Request {
   userId?: string
   userEmail?: string
+  userRole?: UserRole
 }
 
 /**
@@ -36,5 +39,15 @@ export async function authMiddleware(
 
   req.userId = data.user.id
   req.userEmail = data.user.email ?? 'Admin'
+
+  // Obtener rol del usuario desde user_profiles
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
+  req.userRole = (profile?.role as UserRole) ?? 'vendedor'
+
   next()
 }

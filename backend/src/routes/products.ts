@@ -1,5 +1,6 @@
 import { Router, Response } from 'express'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requireAdmin } from '../middleware/authorize'
 import { supabaseAdmin } from '../services/supabase'
 
 const router = Router()
@@ -36,7 +37,7 @@ router.get('/', async (_req: AuthRequest, res: Response): Promise<void> => {
 // ============================================================
 // POST /api/products — crear nueva planta (SKU auto-incremental)
 // ============================================================
-router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', requireAdmin, async (req: AuthRequest, res: Response): Promise<void> => {
   const { name, price, stock } = req.body as {
     name: string; price: number; stock: number
   }
@@ -94,7 +95,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 // ============================================================
 // PUT /api/products/:id — editar planta
 // ============================================================
-router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params
   const { name, price, stock } = req.body as {
     name: string; price: number; stock: number
@@ -159,7 +160,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
 // ============================================================
 // DELETE /api/products/:id — soft delete de planta
 // ============================================================
-router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+router.delete('/:id', requireAdmin, async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params
 
   // Obtener producto actual

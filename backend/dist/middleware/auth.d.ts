@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+export type UserRole = 'admin' | 'vendedor';
 export interface AuthRequest extends Request {
     userId?: string;
     userEmail?: string;
+    userRole?: UserRole;
 }
 /**
  * Middleware de autenticación — valida el JWT de Supabase

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { formatDate } from '@/lib/utils'
+import { useIsAdmin } from '@/hooks/useRole'
 import Modal from '@/components/ui/Modal'
 import type { DiscountCode } from '@/types'
 
@@ -14,6 +15,7 @@ interface DiscountForm { code: string; percentage: string }
 const EMPTY_FORM: DiscountForm = { code: '', percentage: '' }
 
 export default function DescuentosPage() {
+  const isAdmin = useIsAdmin()
   const [codes, setCodes] = useState<DiscountCode[]>([])
   const [loading, setLoading] = useState(true)
   const [sortKey, setSortKey] = useState<SortKey>('created_at')
@@ -148,9 +150,11 @@ export default function DescuentosPage() {
             {loading ? 'Cargando...' : `${active} activos de ${codes.length} total`}
           </p>
         </div>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2 w-fit">
-          <Plus size={16} />Nuevo código
-        </button>
+        {isAdmin && (
+          <button onClick={openCreate} className="btn-primary flex items-center gap-2 w-fit">
+            <Plus size={16} />Nuevo código
+          </button>
+        )}
       </div>
 
       {/* Stats rápidas */}
@@ -225,40 +229,48 @@ export default function DescuentosPage() {
                       </span>
                     </td>
                     <td className="table-cell text-center">
-                      <button
-                        onClick={() => toggleActive(dc)}
-                        disabled={togglingId === dc.id}
-                        title={dc.is_active ? 'Desactivar' : 'Activar'}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors
-                          disabled:opacity-50"
-                      >
-                        {togglingId === dc.id ? (
-                          <Loader2 size={13} className="animate-spin text-white/40" />
-                        ) : dc.is_active ? (
-                          <>
-                            <ToggleRight size={16} className="text-brand-lime" />
-                            <span className="text-brand-lime">Activo</span>
-                          </>
-                        ) : (
-                          <>
-                            <ToggleLeft size={16} className="text-white/30" />
-                            <span className="text-white/30">Inactivo</span>
-                          </>
-                        )}
-                      </button>
+                      {isAdmin ? (
+                        <button
+                          onClick={() => toggleActive(dc)}
+                          disabled={togglingId === dc.id}
+                          title={dc.is_active ? 'Desactivar' : 'Activar'}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors
+                            disabled:opacity-50"
+                        >
+                          {togglingId === dc.id ? (
+                            <Loader2 size={13} className="animate-spin text-white/40" />
+                          ) : dc.is_active ? (
+                            <>
+                              <ToggleRight size={16} className="text-brand-lime" />
+                              <span className="text-brand-lime">Activo</span>
+                            </>
+                          ) : (
+                            <>
+                              <ToggleLeft size={16} className="text-white/30" />
+                              <span className="text-white/30">Inactivo</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${dc.is_active ? 'text-brand-lime' : 'text-white/30'}`}>
+                          {dc.is_active ? <><ToggleRight size={16} /> Activo</> : <><ToggleLeft size={16} /> Inactivo</>}
+                        </span>
+                      )}
                     </td>
                     <td className="table-cell text-white/50 text-sm hidden sm:table-cell">{formatDate(dc.created_at)}</td>
                     <td className="table-cell text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                        <button title="Editar porcentaje" onClick={() => openEdit(dc)}
-                          className="p-1.5 rounded-lg text-white/50 hover:text-brand-white hover:bg-white/10 transition-colors">
-                          <Pencil size={15} />
-                        </button>
-                        <button title="Eliminar" onClick={() => setDeleteTarget(dc)}
-                          className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
+                      {isAdmin && (
+                        <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                          <button title="Editar porcentaje" onClick={() => openEdit(dc)}
+                            className="p-1.5 rounded-lg text-white/50 hover:text-brand-white hover:bg-white/10 transition-colors">
+                            <Pencil size={15} />
+                          </button>
+                          <button title="Eliminar" onClick={() => setDeleteTarget(dc)}
+                            className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))

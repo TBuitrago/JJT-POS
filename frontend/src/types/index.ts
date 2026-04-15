@@ -2,6 +2,8 @@
 // Tipos base del sistema Culto Orquídeas POS
 // ============================================================
 
+export type UserRole = 'admin' | 'vendedor'
+
 export interface Product {
   id: string
   sku: string          // 4 dígitos numéricos únicos (ej. '0001')
@@ -18,6 +20,7 @@ export interface Client {
   name: string
   email: string        // Único en el sistema
   phone: string
+  created_by?: string | null
   created_at: string
 }
 
@@ -46,6 +49,7 @@ export interface Order {
   shipping_cost: number        // No recibe descuento
   total: number                // subtotal_net + shipping_cost
   notes: string | null
+  created_by?: string | null
   created_at: string
   completed_at: string | null
   // Relaciones opcionales (joins)

@@ -1,5 +1,6 @@
 import { Router, Response } from 'express'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requireAdmin } from '../middleware/authorize'
 import { supabaseAdmin } from '../services/supabase'
 
 const router = Router()
@@ -55,7 +56,7 @@ router.get('/validate', async (req: AuthRequest, res: Response): Promise<void> =
 // ============================================================
 // POST /api/discount-codes — crear código de descuento
 // ============================================================
-router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', requireAdmin, async (req: AuthRequest, res: Response): Promise<void> => {
   const { code, percentage } = req.body as {
     code: string; percentage: number
   }
@@ -101,7 +102,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 // ============================================================
 // PUT /api/discount-codes/:id — actualizar código
 // ============================================================
-router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+router.put('/:id', requireAdmin, async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params
   const { percentage, is_active } = req.body as {
     percentage?: number; is_active?: boolean
@@ -145,7 +146,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
 // ============================================================
 // DELETE /api/discount-codes/:id — eliminar código
 // ============================================================
-router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+router.delete('/:id', requireAdmin, async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params
 
   const { data: code, error: fetchError } = await supabaseAdmin

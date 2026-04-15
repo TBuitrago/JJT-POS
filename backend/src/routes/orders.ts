@@ -1,5 +1,6 @@
 import { Router, Response } from 'express'
 import { authMiddleware, AuthRequest } from '../middleware/auth'
+import { requireAdmin } from '../middleware/authorize'
 import { supabaseAdmin } from '../services/supabase'
 import { sendOrderConfirmation } from '../services/email'
 
@@ -211,6 +212,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
       notes: notes?.trim() || null,
       status,
       completed_at: status === 'completed' ? new Date().toISOString() : null,
+      created_by: req.userId,
     })
     .select()
     .single()
@@ -354,7 +356,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   // Verificar que la orden existe, es borrador y no está eliminada
   const { data: order, error: fetchError } = await supabaseAdmin
     .from('orders')
-    .select('id, status')
+    .select('id, status, created_by')
     .eq('id', id)
     .is('deleted_at', null)
     .maybeSingle()
@@ -366,6 +368,12 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
 
   if (order.status !== 'draft') {
     res.status(400).json({ error: 'Solo se pueden editar órdenes en borrador' })
+    return
+  }
+
+  // Vendedores solo pueden editar órdenes que ellos crearon
+  if (req.userRole === 'vendedor' && order.created_by !== req.userId) {
+    res.status(403).json({ error: 'Solo puedes editar órdenes que hayas creado' })
     return
   }
 
@@ -476,6 +484,12 @@ router.patch('/:id/complete', async (req: AuthRequest, res: Response): Promise<v
     return
   }
 
+  // Vendedores solo pueden completar órdenes que ellos crearon
+  if (req.userRole === 'vendedor' && order.created_by !== req.userId) {
+    res.status(403).json({ error: 'Solo puedes completar órdenes que hayas creado' })
+    return
+  }
+
   // Verificar stock para cada item
   const items = order.items as Array<{
     product_id: string; product_name: string; quantity: number
@@ -577,7 +591,7 @@ router.patch('/:id/complete', async (req: AuthRequest, res: Response): Promise<v
 // DELETE /api/orders/:id — soft-delete (cualquier estado)
 // Si completada: revierte stock y crea inventory_logs
 // ============================================================
-router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+router.delete('/:id', requireAdmin, async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params
 
   const { data: order, error: fetchError } = await supabaseAdmin

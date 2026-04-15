@@ -78,7 +78,10 @@ culto-orquideas-pos/
 ```
 GET    /api/health
 
-# Productos
+# Auth
+GET    /api/auth/me                    # Perfil del usuario (id, email, role)
+
+# Productos (POST/PUT/DELETE requieren rol admin)
 GET    /api/products
 POST   /api/products                  # SKU auto-incremental
 PUT    /api/products/:id
@@ -263,6 +266,7 @@ Al **completar** una orden, el sistema envía automáticamente un correo de conf
 
 | Tabla | Descripción |
 |-------|-------------|
+| `user_profiles` | Perfiles de usuario con rol (admin/vendedor) |
 | `products` | Catálogo de plantas con SKU, precio y stock |
 | `clients` | Clientes registrados |
 | `discount_codes` | Códigos de descuento con porcentaje |
@@ -297,6 +301,42 @@ Al **completar** una orden, el sistema envía automáticamente un correo de conf
 | Post-deploy | ✅ | Descarga de órdenes completadas en PDF desde modal de detalle (client-side, @react-pdf/renderer) |
 | Post-deploy | ✅ | Búsqueda en OrdenesPage por nombre de cliente, email o número de orden (debounced 400ms) |
 | Post-deploy | ✅ | Seguridad: Helmet (headers HTTP), rate limiting 200 req/15 min, validación longitud de búsqueda |
+| Post-deploy | ✅ | Rol vendedor: RBAC con dos roles (admin/vendedor), middleware requireAdmin, ownership checks, UI condicional |
+
+---
+
+## Roles y permisos
+
+El sistema implementa dos roles: **admin** y **vendedor**.
+
+| Permiso | Admin | Vendedor |
+|---------|-------|----------|
+| Ver todas las secciones | si | si |
+| Crear ordenes (POS) | si | si |
+| Crear clientes | si | si |
+| Editar ordenes | todas | solo propias |
+| Editar clientes | todos | solo propios |
+| Completar ordenes | todas | solo propias |
+| Eliminar ordenes/clientes/productos | si | NO |
+| Gestionar inventario (crear/editar/eliminar productos) | si | NO |
+| Gestionar descuentos (crear/editar/eliminar codigos) | si | NO |
+
+### Asignacion de roles
+
+Los roles se asignan manualmente en la tabla `user_profiles` de Supabase:
+
+```sql
+-- Asignar rol admin a un usuario existente
+INSERT INTO user_profiles (id, role) VALUES ('<user-uuid>', 'admin');
+
+-- Los usuarios nuevos sin perfil se tratan como vendedor por defecto
+```
+
+### Arquitectura
+
+- **Backend**: middleware `requireAdmin` en rutas protegidas + verificacion de ownership (`created_by`) en PUT/PATCH
+- **Frontend**: hook `useIsAdmin()` y `useCanEdit(createdBy)` para mostrar/ocultar botones condicionalmente
+- **Tablas**: `user_profiles` (id, role), columna `created_by` en `orders` y `clients`
 
 ---
 
@@ -305,6 +345,7 @@ Al **completar** una orden, el sistema envía automáticamente un correo de conf
 | Capa | Mecanismo |
 |------|-----------|
 | Autenticación | Supabase Auth (JWT) — todas las rutas `/api/*` excepto `/api/health` requieren Bearer token válido |
+| Autorización | Roles admin/vendedor — middleware `requireAdmin` + verificación de ownership por recurso |
 | CORS | Restringido al dominio del frontend (`FRONTEND_URL`) — rechaza orígenes externos |
 | Headers HTTP | **Helmet.js** — activa `X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, `Referrer-Policy` y más (CSP desactivado por compatibilidad con el SPA) |
 | Rate limiting | **express-rate-limit** — 200 req / 15 min por IP en todas las rutas `/api/*`. HTTP 429 al superarlo |

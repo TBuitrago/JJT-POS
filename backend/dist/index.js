@@ -9,6 +9,7 @@ const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const path_1 = __importDefault(require("path"));
+const auth_1 = __importDefault(require("./routes/auth"));
 const products_1 = __importDefault(require("./routes/products"));
 const clients_1 = __importDefault(require("./routes/clients"));
 const discountCodes_1 = __importDefault(require("./routes/discountCodes"));
@@ -44,6 +45,7 @@ app.get('/api/health', (_req, res) => {
         timestamp: new Date().toISOString(),
     });
 });
+app.use('/api/auth', auth_1.default);
 app.use('/api/products', products_1.default);
 app.use('/api/clients', clients_1.default);
 app.use('/api/discount-codes', discountCodes_1.default);

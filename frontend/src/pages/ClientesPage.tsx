@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { formatDate, formatCOP } from '@/lib/utils'
+import { useIsAdmin } from '@/hooks/useRole'
+import { useAuthStore } from '@/store/authStore'
 import Modal from '@/components/ui/Modal'
 import type { Client, Order } from '@/types'
 
@@ -15,6 +17,8 @@ interface ClientForm { name: string; email: string; phone: string }
 const EMPTY_FORM: ClientForm = { name: '', email: '', phone: '' }
 
 export default function ClientesPage() {
+  const isAdmin = useIsAdmin()
+  const currentUserId = useAuthStore((s) => s.user?.id)
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -249,14 +253,18 @@ export default function ClientesPage() {
                           className="p-1.5 rounded-lg text-white/50 hover:text-brand-lime hover:bg-white/10 transition-colors">
                           <Eye size={15} />
                         </button>
-                        <button title="Editar" onClick={() => openEdit(client)}
-                          className="p-1.5 rounded-lg text-white/50 hover:text-brand-white hover:bg-white/10 transition-colors">
-                          <Pencil size={15} />
-                        </button>
-                        <button title="Eliminar" onClick={() => setDeleteTarget(client)}
-                          className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
-                          <Trash2 size={15} />
-                        </button>
+                        {(isAdmin || client.created_by === currentUserId) && (
+                          <button title="Editar" onClick={() => openEdit(client)}
+                            className="p-1.5 rounded-lg text-white/50 hover:text-brand-white hover:bg-white/10 transition-colors">
+                            <Pencil size={15} />
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button title="Eliminar" onClick={() => setDeleteTarget(client)}
+                            className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

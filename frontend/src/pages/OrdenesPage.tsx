@@ -10,6 +10,8 @@ import { pdf } from '@react-pdf/renderer'
 import { OrderPDFDoc } from '@/components/OrderPDF'
 import api from '@/lib/api'
 import { formatCOP, formatDate } from '@/lib/utils'
+import { useIsAdmin } from '@/hooks/useRole'
+import { useAuthStore } from '@/store/authStore'
 import Modal from '@/components/ui/Modal'
 import type { Order, OrderItem } from '@/types'
 
@@ -26,6 +28,8 @@ interface OrdersResponse {
 
 export default function OrdenesPage() {
   const navigate = useNavigate()
+  const isAdmin = useIsAdmin()
+  const currentUserId = useAuthStore((s) => s.user?.id)
   const [orders, setOrders] = useState<Order[]>([])
   const [meta, setMeta] = useState({ page: 1, total: 0, pages: 1 })
   const [loading, setLoading] = useState(true)
@@ -356,7 +360,7 @@ export default function OrdenesPage() {
                         </button>
                         {!isDeletedView && (
                           <>
-                            {order.status === 'draft' && (
+                            {order.status === 'draft' && (isAdmin || order.created_by === currentUserId) && (
                               <button
                                 title="Editar borrador"
                                 onClick={() => navigate(`/pos?draft=${order.id}`)}
@@ -365,7 +369,7 @@ export default function OrdenesPage() {
                                 <Pencil size={15} />
                               </button>
                             )}
-                            {order.status === 'draft' && (
+                            {order.status === 'draft' && (isAdmin || order.created_by === currentUserId) && (
                               <button
                                 title="Completar orden"
                                 onClick={() => handleComplete(order)}
@@ -378,10 +382,12 @@ export default function OrdenesPage() {
                                 }
                               </button>
                             )}
-                            <button title="Eliminar orden" onClick={() => setDeleteTarget(order)}
-                              className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
-                              <Trash2 size={15} />
-                            </button>
+                            {isAdmin && (
+                              <button title="Eliminar orden" onClick={() => setDeleteTarget(order)}
+                                className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
+                                <Trash2 size={15} />
+                              </button>
+                            )}
                           </>
                         )}
                       </div>
@@ -444,7 +450,7 @@ export default function OrdenesPage() {
               )}
               {!isDeletedView && (
                 <div className="flex gap-2 flex-wrap justify-end">
-                  {detailOrder.status === 'draft' && (
+                  {detailOrder.status === 'draft' && (isAdmin || detailOrder.created_by === currentUserId) && (
                     <button
                       onClick={() => { setDetailOrder(null); navigate(`/pos?draft=${detailOrder.id}`) }}
                       className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-brand-lime/40 text-brand-lime hover:bg-brand-lime/10 transition-colors"
@@ -452,7 +458,7 @@ export default function OrdenesPage() {
                       <Pencil size={13} /> Editar
                     </button>
                   )}
-                  {detailOrder.status === 'draft' && (
+                  {detailOrder.status === 'draft' && (isAdmin || detailOrder.created_by === currentUserId) && (
                     <button
                       onClick={() => handleComplete(detailOrder)}
                       disabled={completing === detailOrder.id}
@@ -479,12 +485,14 @@ export default function OrdenesPage() {
                       PDF
                     </button>
                   )}
-                  <button
-                    onClick={() => { setDeleteTarget(detailOrder); setDetailOrder(null) }}
-                    className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <Trash2 size={13} /> Eliminar
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => { setDeleteTarget(detailOrder); setDetailOrder(null) }}
+                      className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      <Trash2 size={13} /> Eliminar
+                    </button>
+                  )}
                 </div>
               )}
             </div>

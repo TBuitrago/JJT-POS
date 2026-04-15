@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
+const authorize_1 = require("../middleware/authorize");
 const supabase_1 = require("../services/supabase");
 const email_1 = require("../services/email");
 const router = (0, express_1.Router)();
@@ -159,6 +160,7 @@ router.post('/', async (req, res) => {
         notes: notes?.trim() || null,
         status,
         completed_at: status === 'completed' ? new Date().toISOString() : null,
+        created_by: req.userId,
     })
         .select()
         .single();
@@ -256,7 +258,7 @@ router.put('/:id', async (req, res) => {
     // Verificar que la orden existe, es borrador y no está eliminada
     const { data: order, error: fetchError } = await supabase_1.supabaseAdmin
         .from('orders')
-        .select('id, status')
+        .select('id, status, created_by')
         .eq('id', id)
         .is('deleted_at', null)
         .maybeSingle();
@@ -266,6 +268,11 @@ router.put('/:id', async (req, res) => {
     }
     if (order.status !== 'draft') {
         res.status(400).json({ error: 'Solo se pueden editar órdenes en borrador' });
+        return;
+    }
+    // Vendedores solo pueden editar órdenes que ellos crearon
+    if (req.userRole === 'vendedor' && order.created_by !== req.userId) {
+        res.status(403).json({ error: 'Solo puedes editar órdenes que hayas creado' });
         return;
     }
     // Validaciones básicas
@@ -361,6 +368,11 @@ router.patch('/:id/complete', async (req, res) => {
         res.status(400).json({ error: 'La orden ya está completada' });
         return;
     }
+    // Vendedores solo pueden completar órdenes que ellos crearon
+    if (req.userRole === 'vendedor' && order.created_by !== req.userId) {
+        res.status(403).json({ error: 'Solo puedes completar órdenes que hayas creado' });
+        return;
+    }
     // Verificar stock para cada item
     const items = order.items;
     for (const item of items) {
@@ -448,7 +460,7 @@ router.patch('/:id/complete', async (req, res) => {
 // DELETE /api/orders/:id — soft-delete (cualquier estado)
 // Si completada: revierte stock y crea inventory_logs
 // ============================================================
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorize_1.requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { data: order, error: fetchError } = await supabase_1.supabaseAdmin
         .from('orders')

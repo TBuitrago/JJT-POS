@@ -29,7 +29,7 @@ const NAV_ITEMS = [
 ]
 
 export default function Sidebar() {
-  const { signOut } = useAuthStore()
+  const { signOut, role } = useAuthStore()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -71,7 +71,9 @@ export default function Sidebar() {
         {/* Logo / Header */}
         <div className="px-5 py-5 border-b border-white/10 shrink-0">
           <img src={logo} alt="Culto Orquídeas" className="h-10 w-auto max-w-full mix-blend-luminosity brightness-150" />
-          <p className="text-white/40 text-xs mt-2">Panel de administración</p>
+          <p className="text-white/40 text-xs mt-2">
+            {role === 'vendedor' ? 'Panel de vendedor' : 'Panel de administración'}
+          </p>
         </div>
 
         {/* Navegación */}

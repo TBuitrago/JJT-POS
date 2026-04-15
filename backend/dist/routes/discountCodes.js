@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
+const authorize_1 = require("../middleware/authorize");
 const supabase_1 = require("../services/supabase");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
@@ -47,7 +48,7 @@ router.get('/validate', async (req, res) => {
 // ============================================================
 // POST /api/discount-codes — crear código de descuento
 // ============================================================
-router.post('/', async (req, res) => {
+router.post('/', authorize_1.requireAdmin, async (req, res) => {
     const { code, percentage } = req.body;
     if (!code?.trim()) {
         res.status(400).json({ error: 'El código es requerido' });
@@ -82,7 +83,7 @@ router.post('/', async (req, res) => {
 // ============================================================
 // PUT /api/discount-codes/:id — actualizar código
 // ============================================================
-router.put('/:id', async (req, res) => {
+router.put('/:id', authorize_1.requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { percentage, is_active } = req.body;
     if (percentage !== undefined && (isNaN(percentage) || percentage <= 0 || percentage > 100)) {
@@ -118,7 +119,7 @@ router.put('/:id', async (req, res) => {
 // ============================================================
 // DELETE /api/discount-codes/:id — eliminar código
 // ============================================================
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorize_1.requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { data: code, error: fetchError } = await supabase_1.supabaseAdmin
         .from('discount_codes')

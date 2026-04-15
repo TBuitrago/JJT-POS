@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
+const authorize_1 = require("../middleware/authorize");
 const supabase_1 = require("../services/supabase");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
@@ -37,7 +38,7 @@ router.get('/', async (_req, res) => {
 // ============================================================
 // POST /api/products — crear nueva planta (SKU auto-incremental)
 // ============================================================
-router.post('/', async (req, res) => {
+router.post('/', authorize_1.requireAdmin, async (req, res) => {
     const { name, price, stock } = req.body;
     if (!name?.trim()) {
         res.status(400).json({ error: 'El nombre es requerido' });
@@ -85,7 +86,7 @@ router.post('/', async (req, res) => {
 // ============================================================
 // PUT /api/products/:id — editar planta
 // ============================================================
-router.put('/:id', async (req, res) => {
+router.put('/:id', authorize_1.requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { name, price, stock } = req.body;
     if (!name?.trim()) {
@@ -140,7 +141,7 @@ router.put('/:id', async (req, res) => {
 // ============================================================
 // DELETE /api/products/:id — soft delete de planta
 // ============================================================
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorize_1.requireAdmin, async (req, res) => {
     const { id } = req.params;
     // Obtener producto actual
     const { data: product, error: fetchError } = await supabase_1.supabaseAdmin

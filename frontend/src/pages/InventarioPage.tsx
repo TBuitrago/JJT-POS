@@ -6,6 +6,7 @@ import {
 import api from '@/lib/api'
 import { formatCOP } from '@/lib/utils'
 import { useCartStore } from '@/store/cartStore'
+import { useIsAdmin } from '@/hooks/useRole'
 import Modal from '@/components/ui/Modal'
 import type { Product } from '@/types'
 
@@ -16,6 +17,7 @@ const EMPTY_FORM: ProductForm = { name: '', price: '', stock: '' }
 
 export default function InventarioPage() {
   const { addItem } = useCartStore()
+  const isAdmin = useIsAdmin()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -149,9 +151,11 @@ export default function InventarioPage() {
             {loading ? 'Cargando...' : `${products.length} plantas registradas`}
           </p>
         </div>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2 w-fit">
-          <Plus size={16} />Nueva planta
-        </button>
+        {isAdmin && (
+          <button onClick={openCreate} className="btn-primary flex items-center gap-2 w-fit">
+            <Plus size={16} />Nueva planta
+          </button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
@@ -210,14 +214,18 @@ export default function InventarioPage() {
                           className="p-1.5 rounded-lg text-white/50 hover:text-brand-lime hover:bg-white/10 transition-colors">
                           <ShoppingCart size={15} />
                         </button>
-                        <button title="Editar" onClick={() => openEdit(product)}
-                          className="p-1.5 rounded-lg text-white/50 hover:text-brand-white hover:bg-white/10 transition-colors">
-                          <Pencil size={15} />
-                        </button>
-                        <button title="Eliminar" onClick={() => setDeleteTarget(product)}
-                          className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
-                          <Trash2 size={15} />
-                        </button>
+                        {isAdmin && (
+                          <button title="Editar" onClick={() => openEdit(product)}
+                            className="p-1.5 rounded-lg text-white/50 hover:text-brand-white hover:bg-white/10 transition-colors">
+                            <Pencil size={15} />
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button title="Eliminar" onClick={() => setDeleteTarget(product)}
+                            className="p-1.5 rounded-lg text-white/50 hover:text-red-400 hover:bg-white/10 transition-colors">
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

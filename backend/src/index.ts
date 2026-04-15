@@ -4,6 +4,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import path from 'path'
+import authRouter from './routes/auth'
 import productsRouter from './routes/products'
 import clientsRouter from './routes/clients'
 import discountCodesRouter from './routes/discountCodes'
@@ -45,6 +46,7 @@ app.get('/api/health', (_req, res) => {
   })
 })
 
+app.use('/api/auth', authRouter)
 app.use('/api/products', productsRouter)
 app.use('/api/clients', clientsRouter)
 app.use('/api/discount-codes', discountCodesRouter)

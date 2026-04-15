@@ -1,20 +1,25 @@
 import { create } from 'zustand'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import type { UserRole } from '@/types'
 
 interface AuthStore {
   user: User | null
   session: Session | null
+  role: UserRole | null
   loading: boolean
   initialized: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   setSession: (session: Session | null) => void
+  setRole: (role: UserRole | null) => void
+  isAdmin: () => boolean
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   session: null,
+  role: null,
   loading: false,
   initialized: false,
 
@@ -29,7 +34,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   signOut: async () => {
     await supabase.auth.signOut()
-    set({ user: null, session: null })
+    set({ user: null, session: null, role: null })
   },
 
   setSession: (session) => {
@@ -39,4 +44,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
       initialized: true,
     })
   },
+
+  setRole: (role) => set({ role }),
+
+  isAdmin: () => get().role === 'admin',
 }))

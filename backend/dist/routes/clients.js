@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
+const authorize_1 = require("../middleware/authorize");
 const supabase_1 = require("../services/supabase");
 const router = (0, express_1.Router)();
 router.use(auth_1.authMiddleware);
@@ -67,6 +68,7 @@ router.post('/', async (req, res) => {
         name: name.trim(),
         email: email?.trim().toLowerCase() || null,
         phone: phone?.trim() || null,
+        created_by: req.userId,
     })
         .select()
         .single();
@@ -89,11 +91,16 @@ router.put('/:id', async (req, res) => {
     // Verificar que el cliente existe
     const { data: current, error: fetchError } = await supabase_1.supabaseAdmin
         .from('clients')
-        .select('id')
+        .select('id, created_by')
         .eq('id', id)
         .maybeSingle();
     if (fetchError || !current) {
         res.status(404).json({ error: 'Cliente no encontrado' });
+        return;
+    }
+    // Vendedores solo pueden editar clientes que ellos crearon
+    if (req.userRole === 'vendedor' && current.created_by !== req.userId) {
+        res.status(403).json({ error: 'Solo puedes editar clientes que hayas creado' });
         return;
     }
     // Verificar unicidad de email (si cambió)
@@ -128,7 +135,7 @@ router.put('/:id', async (req, res) => {
 // ============================================================
 // DELETE /api/clients/:id — eliminar cliente
 // ============================================================
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorize_1.requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { data: client, error: fetchError } = await supabase_1.supabaseAdmin
         .from('clients')

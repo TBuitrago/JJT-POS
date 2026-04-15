@@ -21,6 +21,13 @@ async function authMiddleware(req, res, next) {
     }
     req.userId = data.user.id;
     req.userEmail = data.user.email ?? 'Admin';
+    // Obtener rol del usuario desde user_profiles
+    const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .maybeSingle();
+    req.userRole = profile?.role ?? 'vendedor';
     next();
 }
 //# sourceMappingURL=auth.js.map
