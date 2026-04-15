@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import logo from '@/assets/logo_culto.webp'
@@ -98,8 +98,15 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-white/20 text-xs text-center mt-8">
-          Acceso exclusivo para administradores
+        <Link
+          to="/forgot-password"
+          className="block text-white/40 text-sm text-center mt-6 hover:text-white/60 transition-colors"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
+
+        <p className="text-white/20 text-xs text-center mt-4">
+          Acceso exclusivo para personal autorizado
         </p>
       </div>
     </div>

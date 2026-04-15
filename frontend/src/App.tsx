@@ -5,6 +5,8 @@ import { PageSkeleton } from '@/components/ui/Skeleton'
 import ProtectedRoute from '@/components/layout/ProtectedRoute'
 import Layout from '@/components/layout/Layout'
 import LoginPage from '@/pages/LoginPage'
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
+import ResetPasswordPage from '@/pages/ResetPasswordPage'
 import DashboardPage from '@/pages/DashboardPage'
 import InventarioPage from '@/pages/InventarioPage'
 import POSPage from '@/pages/POSPage'
@@ -27,6 +29,10 @@ function AppRoutes() {
         path="/login"
         element={session ? <Navigate to="/dashboard" replace /> : <LoginPage />}
       />
+
+      {/* Públicas — recuperación de contraseña */}
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Protegidas — requieren sesión activa */}
       <Route
