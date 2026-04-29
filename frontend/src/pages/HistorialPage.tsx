@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
-  ShoppingCart, Plus, Trash2, PackagePlus,
+  ShoppingCart, Plus, Trash2,
 } from 'lucide-react'
 import api from '@/lib/api'
 import { formatDate } from '@/lib/utils'
@@ -109,7 +109,7 @@ export default function HistorialPage() {
                 <th className="table-header px-4 py-3 text-right hidden sm:table-cell">Antes</th>
                 <th className="table-header px-4 py-3 text-right">Cambio</th>
                 <th className="table-header px-4 py-3 text-right hidden sm:table-cell">Después</th>
-                <th className="table-header px-4 py-3 text-left hidden md:table-cell">Orden</th>
+                <th className="table-header px-4 py-3 text-left hidden md:table-cell">SKU</th>
                 <th className="table-header px-4 py-3 text-left hidden md:table-cell">Realizado por</th>
                 <th className="table-header px-4 py-3 text-left hidden sm:table-cell">Fecha</th>
               </tr>
@@ -164,8 +164,8 @@ export default function HistorialPage() {
                         {log.quantity_after}
                       </td>
                       <td className="table-cell text-sm hidden md:table-cell">
-                        {log.order_id ? (
-                          <span className="font-mono text-xs text-purple-400">—</span>
+                        {log.product?.sku ? (
+                          <span className="font-mono text-xs text-brand-lime">{log.product.sku}</span>
                         ) : (
                           <span className="text-white/20 text-xs">—</span>
                         )}
@@ -224,14 +224,6 @@ export default function HistorialPage() {
         </div>
       )}
 
-      {/* Info de columna Orden — nota temporal hasta que tengamos joins */}
-      <div className="flex items-start gap-2 bg-white/5 rounded-xl px-4 py-3">
-        <PackagePlus size={15} className="text-brand-lime shrink-0 mt-0.5" />
-        <p className="text-xs text-white/50">
-          Los movimientos con acción <span className="text-purple-400 font-medium">Venta</span> están
-          vinculados a una orden. El número CO-XXXX se puede consultar en el módulo de Órdenes.
-        </p>
-      </div>
     </div>
   )
 }

@@ -18,7 +18,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 
   let query = supabaseAdmin
     .from('inventory_logs')
-    .select('*', { count: 'exact' })
+    .select('*, product:products(sku)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
