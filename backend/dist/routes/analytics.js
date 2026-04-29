@@ -85,7 +85,7 @@ router.get('/summary', async (req, res) => {
     const totalShipping = orders.reduce((s, o) => s + o.shipping_cost, 0);
     const totalInventoryValue = products.reduce((s, p) => s + p.stock * p.price, 0);
     const totalUnits = products.reduce((s, p) => s + p.stock, 0);
-    const lowStockCount = products.filter(p => p.stock < 5).length;
+    const lowStockCount = products.filter(p => p.stock > 0 && p.stock < 5).length;
     // last30Days — siempre calculado sobre el conjunto de órdenes retornado
     // (DashboardPage lo usa en sus KPI cards)
     const now = new Date();

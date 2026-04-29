@@ -64,7 +64,7 @@ export default function DashboardPage() {
         setSalesByDay(salesRes.data.data)
         setRecentOrders((ordersRes.data as unknown as { data: Order[]; meta: unknown }).data)
         setLowStockProducts(
-          productsRes.data.data.filter((p: Product) => p.stock < 5).slice(0, 6)
+          productsRes.data.data.filter((p: Product) => p.stock > 0 && p.stock < 5).slice(0, 6)
         )
       } finally {
         setLoading(false)
