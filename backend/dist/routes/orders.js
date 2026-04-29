@@ -144,6 +144,10 @@ router.post('/', async (req, res) => {
         res.status(400).json({ error: 'Estado de orden inválido (draft | completed)' });
         return;
     }
+    if (typeof shipping_cost === 'number' && shipping_cost < 0) {
+        res.status(400).json({ error: 'El costo de envío no puede ser negativo' });
+        return;
+    }
     // Si hay código de descuento, verificar que es activo
     if (discount_code_id) {
         const { data: dc } = await supabase_1.supabaseAdmin
@@ -324,6 +328,10 @@ router.put('/:id', async (req, res) => {
     }
     if (!items || items.length === 0) {
         res.status(400).json({ error: 'La orden debe tener al menos un producto' });
+        return;
+    }
+    if (typeof shipping_cost === 'number' && shipping_cost < 0) {
+        res.status(400).json({ error: 'El costo de envío no puede ser negativo' });
         return;
     }
     // Actualizar header de la orden

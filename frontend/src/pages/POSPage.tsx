@@ -320,6 +320,12 @@ export default function POSPage() {
   async function handleSubmitOrder(status: 'draft' | 'completed') {
     setSubmitting(true)
     setSubmitError(null)
+    if (shipping < 0) {
+      setSubmitError('El costo de envío no puede ser negativo')
+      setSubmitting(false)
+      setConfirmModal(null)
+      return
+    }
     try {
       const payload = {
         client_id: clientMode === 'registered' ? selectedClient?.id : undefined,
@@ -910,7 +916,10 @@ export default function POSPage() {
               min={0}
               step={1000}
               value={shippingCost}
-              onChange={e => setShippingCost(e.target.value)}
+              onChange={e => {
+                const v = e.target.value
+                if (v === '' || parseFloat(v) >= 0) setShippingCost(v)
+              }}
             />
           </div>
           <div>
