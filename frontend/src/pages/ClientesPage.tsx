@@ -296,7 +296,7 @@ export default function ClientesPage() {
           </div>
           <div>
             <label className="label">
-              Email <span className="text-white/30">(opcional)</span>
+              Email
             </label>
             <input type="email" className="input" placeholder="maria@email.com"
               value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
