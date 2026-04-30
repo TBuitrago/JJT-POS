@@ -146,6 +146,19 @@ router.delete('/:id', authorize_1.requireAdmin, async (req, res) => {
         res.status(404).json({ error: 'Cliente no encontrado' });
         return;
     }
+    // Preservar nombre del cliente en órdenes históricas. El FK orders.client_id
+    // tiene ON DELETE SET NULL, pero la tabla orders tiene el CHECK
+    // valid_guest_or_client (client_id IS NOT NULL OR guest_name IS NOT NULL),
+    // así que sin guest_name la eliminación violaría el constraint.
+    const { error: preserveError } = await supabase_1.supabaseAdmin
+        .from('orders')
+        .update({ guest_name: client.name })
+        .eq('client_id', id)
+        .is('guest_name', null);
+    if (preserveError) {
+        res.status(500).json({ error: `Error preservando órdenes históricas: ${preserveError.message}` });
+        return;
+    }
     const { error } = await supabase_1.supabaseAdmin
         .from('clients')
         .delete()

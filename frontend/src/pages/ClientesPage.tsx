@@ -134,7 +134,11 @@ export default function ClientesPage() {
       await api.delete(`/api/clients/${deleteTarget.id}`)
       showToast(`"${deleteTarget.name}" eliminado`, 'ok')
       setDeleteTarget(null); fetchClients()
-    } catch { showToast('Error al eliminar el cliente', 'err') }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+        ?? 'Error al eliminar el cliente'
+      showToast(msg, 'err')
+    }
     finally { setDeleting(false) }
   }
 
