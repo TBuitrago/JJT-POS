@@ -61,9 +61,13 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(400).json({ error: 'El nombre es requerido' })
     return
   }
+  if (!email?.trim()) {
+    res.status(400).json({ error: 'El correo electrónico es requerido' })
+    return
+  }
 
-  // Verificar unicidad de email (si se proporcionó)
-  if (email?.trim()) {
+  // Verificar unicidad de email
+  {
     const { data: existing } = await supabaseAdmin
       .from('clients')
       .select('id')
@@ -80,7 +84,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     .from('clients')
     .insert({
       name: name.trim(),
-      email: email?.trim().toLowerCase() || null,
+      email: email.trim().toLowerCase(),
       phone: phone?.trim() || null,
       created_by: req.userId,
     })
@@ -108,6 +112,10 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     res.status(400).json({ error: 'El nombre es requerido' })
     return
   }
+  if (!email?.trim()) {
+    res.status(400).json({ error: 'El correo electrónico es requerido' })
+    return
+  }
 
   // Verificar que el cliente existe
   const { data: current, error: fetchError } = await supabaseAdmin
@@ -128,7 +136,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   }
 
   // Verificar unicidad de email (si cambió)
-  if (email?.trim()) {
+  {
     const { data: existing } = await supabaseAdmin
       .from('clients')
       .select('id')
@@ -146,7 +154,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
     .from('clients')
     .update({
       name: name.trim(),
-      email: email?.trim().toLowerCase() || null,
+      email: email.trim().toLowerCase(),
       phone: phone?.trim() || null,
     })
     .eq('id', id)

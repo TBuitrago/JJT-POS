@@ -303,7 +303,7 @@ export default function ClientesPage() {
               Email
             </label>
             <input type="email" className="input" placeholder="maria@email.com"
-              value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
           </div>
           <div>
             <label className="label">

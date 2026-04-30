@@ -205,7 +205,24 @@ export default function InventarioPage() {
                     <td className="table-cell font-medium text-white">{product.name}</td>
                     <td className="table-cell text-right">{formatCOP(product.price)}</td>
                     <td className="table-cell text-right">
-                      <span className={product.stock < 5 ? 'text-amber-400 font-semibold' : ''}>{product.stock}</span>
+                      <span className={`inline-flex items-center gap-1.5 font-semibold ${
+                        product.stock === 0 ? 'text-red-400'
+                        : product.stock < 5 ? 'text-amber-400'
+                        : 'text-brand-lime'
+                      }`}
+                        title={
+                          product.stock === 0 ? 'Agotado'
+                          : product.stock < 5 ? 'Stock bajo'
+                          : 'Disponible'
+                        }
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          product.stock === 0 ? 'bg-red-400'
+                          : product.stock < 5 ? 'bg-amber-400'
+                          : 'bg-brand-lime'
+                        }`} />
+                        {product.stock}
+                      </span>
                     </td>
                     <td className="table-cell text-right">
                       <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
@@ -292,10 +309,17 @@ export default function InventarioPage() {
         </div>
       )}
 
-      {!loading && products.some(p => p.stock < 5) && (
+      {!loading && products.some(p => p.stock === 0) && (
+        <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/10 rounded-xl px-4 py-3">
+          <AlertTriangle size={16} className="shrink-0" />
+          <span>{products.filter(p => p.stock === 0).length} planta(s) agotada(s)</span>
+        </div>
+      )}
+
+      {!loading && products.some(p => p.stock > 0 && p.stock < 5) && (
         <div className="flex items-center gap-2 text-amber-400 text-sm bg-amber-400/10 rounded-xl px-4 py-3">
           <AlertTriangle size={16} className="shrink-0" />
-          <span>{products.filter(p => p.stock < 5).length} planta(s) con stock bajo (menos de 5 unidades)</span>
+          <span>{products.filter(p => p.stock > 0 && p.stock < 5).length} planta(s) con stock bajo (1–4 unidades)</span>
         </div>
       )}
 

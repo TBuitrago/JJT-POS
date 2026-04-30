@@ -1069,10 +1069,10 @@ export default function POSPage() {
               onChange={e => setNewClientForm(f => ({ ...f, name: e.target.value }))} required />
           </div>
           <div>
-            <label className="label">Email</label>
+            <label className="label">Email *</label>
             <input type="email" className="input" placeholder="maria@email.com"
               value={newClientForm.email}
-              onChange={e => setNewClientForm(f => ({ ...f, email: e.target.value }))} />
+              onChange={e => setNewClientForm(f => ({ ...f, email: e.target.value }))} required />
           </div>
           <div>
             <label className="label">Teléfono</label>
