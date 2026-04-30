@@ -54,23 +54,32 @@ export default function POSPage() {
   const [editingPriceId, setEditingPriceId]   = useState<string | null>(null)
   const [editPriceValue, setEditPriceValue]   = useState('')
   const [editPriceNote,  setEditPriceNote]    = useState('')
+  const [priceNoteError, setPriceNoteError]   = useState<string | null>(null)
 
   function openPriceEdit(item: { id: string; price: number; customPrice?: number; priceNote?: string }) {
     setEditingPriceId(item.id)
     setEditPriceValue(String(item.customPrice ?? item.price))
     setEditPriceNote(item.priceNote ?? '')
+    setPriceNoteError(null)
   }
 
   function confirmPriceEdit(productId: string, originalPrice: number) {
     const parsed = parseFloat(editPriceValue.replace(/[^0-9.]/g, ''))
     if (isNaN(parsed) || parsed < 0) { setEditingPriceId(null); return }
     if (parsed === originalPrice) {
-      // Revertir al precio original
+      // Revertir al precio original (no requiere motivo)
       updateItemPrice(productId, null, null)
-    } else {
-      updateItemPrice(productId, parsed, editPriceNote.trim() || null)
+      setEditingPriceId(null)
+      setPriceNoteError(null)
+      return
     }
+    if (!editPriceNote.trim()) {
+      setPriceNoteError('El motivo del ajuste es obligatorio')
+      return
+    }
+    updateItemPrice(productId, parsed, editPriceNote.trim())
     setEditingPriceId(null)
+    setPriceNoteError(null)
   }
 
   // ── descuento ──────────────────────────────────────────────────────────────
@@ -684,19 +693,27 @@ export default function POSPage() {
               {/* Campo de nota */}
               <div>
                 <label className="label">
-                  Motivo del ajuste <span className="text-white/30 font-normal">(opcional)</span>
+                  Motivo del ajuste <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="Ej: Planta más pequeña de lo normal"
                   value={editPriceNote}
-                  onChange={e => setEditPriceNote(e.target.value)}
+                  onChange={e => {
+                    setEditPriceNote(e.target.value)
+                    if (priceNoteError) setPriceNoteError(null)
+                  }}
                   onKeyDown={e => {
                     if (e.key === 'Enter') confirmPriceEdit(editingItem.id, editingItem.price)
                     if (e.key === 'Escape') setEditingPriceId(null)
                   }}
-                  className="input text-sm"
+                  className={`input text-sm ${priceNoteError ? 'border-red-400/50' : ''}`}
                 />
+                {priceNoteError && (
+                  <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                    <AlertTriangle size={11} /> {priceNoteError}
+                  </p>
+                )}
               </div>
 
               {/* Botones */}
